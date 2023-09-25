@@ -1,8 +1,11 @@
 #include <bitset>
 #include <iostream>
 #include <sstream>
+#include <iomanip>
 #include <Adafruit_BME280.h>
 #include <Adafruit_MCP23008.h>
+#include <Adafruit_GFX.h>
+#include <Adafruit_SSD1306.h>
 #include "battery.h"
 #include "esp_camera.h"
 #include <WiFi.h>
@@ -12,6 +15,13 @@
 #include "camera_pins.h"
 
 #define SEALEVELPRESSURE_HPA (1024)
+
+#define OLED_SCREEN_WIDTH 128 // OLED display width, in pixels
+#define OLED_SCREEN_HEIGHT 32 // OLED display height, in pixels
+#define OLED_RESET     -1 // Reset pin # (or -1 if sharing Arduino reset pin)
+#define OLED_SCREEN_ADDRESS 0x3C ///< See datasheet for Address; 0x3D for 128x64, 0x3C for 128x32
+
+Adafruit_SSD1306 oledDisplay(OLED_SCREEN_WIDTH, OLED_SCREEN_HEIGHT, &Wire, OLED_RESET);
 
 Adafruit_BME280 bme1; // I2C
 Adafruit_BME280 bme2; // I2C
@@ -23,8 +33,10 @@ void startCameraServer();
 bool initializeLED();
 bool initializeMultiplexer();
 bool initializeWeather();
+bool initializeOLEDDisplay();
 bool initialiezCamera();
 bool initializeWiFi();
+void displayTemperature();
 void displayError(const char* error);
 
 bool status = false;
@@ -41,6 +53,7 @@ void setup() {
     status &= initializeMultiplexer();
     status &= initializeWeather();
     status &= initializeCamera();
+    status &= initializeOLEDDisplay();
     status &= initializeWiFi();
 
     startCameraServer();
@@ -178,6 +191,17 @@ bool initializeCamera() {
 
 }
 
+bool initializeOLEDDisplay() {
+
+  if(!oledDisplay.begin(SSD1306_SWITCHCAPVCC, OLED_SCREEN_ADDRESS)) {
+    displayError("SSD1306 allocation failed");
+    return false;
+  }
+
+  return true;
+
+}
+
 bool initializeWiFi() {
    Serial.printf("Connect to %s, %s\r\n", ssid, password);
 
@@ -222,29 +246,28 @@ void loop() {
     Serial.print("Weather 2\t");
     printWeather(bme2);
 
+    displayTemperature();
+
     Serial.println();
 
     delay(1000);
 }
 
-/*
-{
-	"name":"Arduino on ESP32",
-	"toolchainPrefix":"xtensa-esp32-elf",
-	"svdFile":"esp32.svd",
-	"request":"attach",
-	"postAttachCommands":[
-		"set remote hardware-watchpoint-limit 2",
-		"monitor reset halt",
-		"monitor gdb_sync",
-		"thb setup",
-		"c"
-	],
-	"overrideRestartCommands":[
-		"monitor reset halt",
-		"monitor gdb_sync",
-		"thb setup",
-		"c"
-	]
+
+void displayTemperature() {
+
+    std::stringstream stream;
+    stream << std::setfill('0') << std::setw(4) << std::fixed << std::setprecision(2)
+           << bme1.readTemperature()
+           << "C";
+
+    std::string temperature = stream.str();
+
+    oledDisplay.clearDisplay();
+    oledDisplay.setTextSize(2); // Draw 2X-scale text
+    oledDisplay.setTextColor(SSD1306_WHITE);
+    oledDisplay.setCursor(10, 10);
+    oledDisplay.println(temperature.c_str());
+    oledDisplay.display();
+
 }
-*/
