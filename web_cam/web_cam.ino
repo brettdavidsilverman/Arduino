@@ -26,6 +26,9 @@ Adafruit_SSD1306 oledDisplay(OLED_SCREEN_WIDTH, OLED_SCREEN_HEIGHT, &Wire, OLED_
 Adafruit_BME280 bme1; // I2C
 Adafruit_BME280 bme2; // I2C
 
+const char *accessPointSSID = "bee-cam-1";
+const char *accessPointPassword = "feebeegeeb3";
+
 const char *ssid     = "MyAndroid";
 const char *password = "feebeegeeb3";
 
@@ -47,6 +50,9 @@ Adafruit_MCP23008 mcp;
 void setup() {
     Serial.begin(115200);
     
+    if (!psramInit())
+        displayError("PSRAM failed initialization");
+
     status = true;
 
     status &= initializeLED();
@@ -165,6 +171,7 @@ bool initializeCamera() {
     config.xclk_freq_hz = 20000000;
     config.pixel_format = PIXFORMAT_JPEG;
     config.frame_size   = FRAMESIZE_UXGA;
+    config.fb_location =  CAMERA_FB_IN_PSRAM;
     config.jpeg_quality = 10;
     config.fb_count     = 2;
 
@@ -183,7 +190,7 @@ bool initializeCamera() {
     s->set_saturation(s, -2);  // lower the saturation
 
     // drop down frame size for higher initial frame rate
-    s->set_framesize(s, FRAMESIZE_QVGA);
+    s->set_framesize(s, FRAMESIZE_HVGA);
 
     Serial.println("Camera initializaed");
 
@@ -203,22 +210,31 @@ bool initializeOLEDDisplay() {
 }
 
 bool initializeWiFi() {
-   Serial.printf("Connect to %s, %s\r\n", ssid, password);
+    Serial.printf("Connect to %s, %s\r\n", ssid, password);
 
     // If you want to use AP mode, you can use the following code
-    // WiFi.softAP(ssid, password);
-    // IPAddress IP = WiFi.softAPIP();
-    // Serial.print("AP IP address: ");
-    // Serial.println(IP);
+    WiFi.mode(WIFI_MODE_AP);
+    WiFi.softAP(accessPointSSID, accessPointPassword);
+//    WiFi.begin(ssid, password);
 
-    WiFi.begin(ssid, password);
+    IPAddress IP = WiFi.softAPIP();
+    Serial.println("AP IP address:");
+    Serial.print("http://");
+    Serial.print(IP);
+    Serial.println(":81/stream");
 
+    Serial.println("Waiting for connection...");
+
+    WiFi.waitForConnectResult();
+/*
     while (WiFi.status() != WL_CONNECTED) {
         delay(500);
         Serial.print(".");
     }
-
+*/
     Serial.println("");
+
+
     Serial.println("WiFi connected");
 
     return true;
@@ -233,22 +249,22 @@ void displayError(const char* error) {
 }
 
 void loop() {
+    
+    bme1.begin(0x76);
+    bme2.begin(0x77);
+
     // put your main code here, to run repeatedly:
     delay(100);
     digitalWrite(2, HIGH);
     delay(100);
     digitalWrite(2, LOW);
 
-    Serial.println(WiFi.localIP());
-
-    Serial.print("Weather 1\t");
-    printWeather(bme1);
-    Serial.print("Weather 2\t");
-    printWeather(bme2);
+//    Serial.println(WiFi.localIP());
 
     displayTemperature();
 
-    Serial.println();
+//    Serial.println();
+//    Serial.printf("PSRAM size: %d\n", ESP.getFreePsram());
 
     delay(1000);
 }
