@@ -32,6 +32,10 @@ const char *accessPointPassword = "feebeegeeb3";
 const char *ssid     = "MyAndroid";
 const char *password = "feebeegeeb3";
 
+IPAddress localIP(192, 168, 1, 26);
+IPAddress gateway(192, 168, 1, 26);
+IPAddress subnet(255, 255, 255, 24);
+
 void startCameraServer();
 bool initializeLED();
 bool initializeMultiplexer();
@@ -55,12 +59,23 @@ void setup() {
 
     status = true;
 
-    status &= initializeLED();
-    status &= initializeMultiplexer();
-    status &= initializeWeather();
-    status &= initializeCamera();
-    status &= initializeOLEDDisplay();
-    status &= initializeWiFi();
+    if (!initializeLED())
+      displayError("LED Initialization failed");
+
+    if (!initializeMultiplexer())
+      displayError("Multiplexer initialization failed");
+
+    if (!initializeWeather())
+      displayError("Weather initialization failed");
+
+    if (!initializeCamera())
+      displayError("Camera initialization failed");
+
+    if (!initializeOLEDDisplay())
+      displayError("OLED initialkization failed");
+
+    if (!initializeWiFi())
+      displayError("WiFi initialization failed");
 
     startCameraServer();
 
@@ -81,22 +96,11 @@ bool initializeLED() {
 
 bool initializeWeather() {
  
-  unsigned status1, status2;
-    
   // default settings
-  status1 = bme1.begin(0x76);
-  status2 = bme2.begin(0x77);
+  bme1.begin(0x76);
+  bme2.begin(0x77);
 
   // You can also pass in a Wire library object like &Wire2
-  // status = bme.begin(0x76, &Wire2)
-  if (!status1 || !status2) {
-      std::stringstream stream;
-      stream << "Sensor ID 1 was: 0x" << std::hex << bme1.sensorID() << std::endl
-             << "Sensor ID 2 was: 0x" << std::hex << bme2.sensorID() << std::endl;
-      displayError(stream.str().c_str());
-      return false;
-  }
-
   Serial.println("Weather sensors initialized");
   return true;
 
@@ -210,32 +214,20 @@ bool initializeOLEDDisplay() {
 }
 
 bool initializeWiFi() {
-    Serial.printf("Connect to %s, %s\r\n", ssid, password);
+    Serial.printf("Connect to %s, %s\r\n", accessPointSSID, accessPointPassword);
 
     // If you want to use AP mode, you can use the following code
+    //WiFi.softAPConfig(localIP, gateway, subnet);
     WiFi.mode(WIFI_MODE_AP);
     WiFi.softAP(accessPointSSID, accessPointPassword);
-//    WiFi.begin(ssid, password);
 
     IPAddress IP = WiFi.softAPIP();
+
     Serial.println("AP IP address:");
     Serial.print("http://");
     Serial.print(IP);
     Serial.println(":81/stream");
 
-    Serial.println("Waiting for connection...");
-
-    WiFi.waitForConnectResult();
-/*
-    while (WiFi.status() != WL_CONNECTED) {
-        delay(500);
-        Serial.print(".");
-    }
-*/
-    Serial.println("");
-
-
-    Serial.println("WiFi connected");
 
     return true;
    
@@ -273,11 +265,22 @@ void loop() {
 void displayTemperature() {
 
     std::stringstream stream;
-    stream << std::setfill('0') << std::setw(4) << std::fixed << std::setprecision(2)
-           << bme1.readTemperature()
-           << "C";
+
+    if (bme1.begin(0x76))
+      stream << std::setfill('0') << std::setw(4) << std::fixed << std::setprecision(2)
+             << bme1.readTemperature()
+             << "C";
+    else if (bme2.begin(0x77))
+      stream << std::setfill('0') << std::setw(4) << std::fixed << std::setprecision(2)
+             << bme2.readTemperature()
+             << "C";
+    else
+      stream << "Err";
 
     std::string temperature = stream.str();
+
+    if (!initializeOLEDDisplay())
+      displayError("OLED initialkization failed");
 
     oledDisplay.clearDisplay();
     oledDisplay.setTextSize(2); // Draw 2X-scale text
