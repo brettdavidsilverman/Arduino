@@ -32,9 +32,10 @@ const char *accessPointPassword = "feebeegeeb3";
 const char *ssid     = "MyAndroid";
 const char *password = "feebeegeeb3";
 
-IPAddress localIP(192, 168, 1, 26);
-IPAddress gateway(192, 168, 1, 26);
-IPAddress subnet(255, 255, 255, 24);
+
+// IPAddress localIP(192, 168, 1, 26);
+// IPAddress gateway(192, 168, 1, 26);
+// IPAddress subnet(255, 255, 255, 24);
 
 void startCameraServer();
 bool initializeLED();
@@ -47,6 +48,8 @@ void displayTemperature();
 void displayError(const char* error);
 
 bool status = false;
+bool light = false;
+
 void printWeather(Adafruit_BME280& bme);
 
 Adafruit_MCP23008 mcp;
@@ -242,8 +245,9 @@ void displayError(const char* error) {
 
 void loop() {
     
-    bme1.begin(0x76);
-    bme2.begin(0x77);
+//    bme1.begin(0x76);
+//    bme2.begin(0x77);
+    initializeMultiplexer();
 
     // put your main code here, to run repeatedly:
     delay(100);
