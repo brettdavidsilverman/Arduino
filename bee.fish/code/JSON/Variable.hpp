@@ -1,12 +1,14 @@
 #ifndef BEE_FISH__SCRIPT__VARIABLE_HPP
 #define BEE_FISH__SCRIPT__VARIABLE_HPP
 
+#include <iomanip>
 #include <map>
 #include <vector>
 #include <memory>
 #include <cmath>
 
-#include "../JSON/JSON.hpp"
+#include "Type.hpp"
+
 #include "Config.hpp"
 
 namespace BeeFishScript {
@@ -32,8 +34,6 @@ namespace BeeFishScript {
    typedef std::shared_ptr<BeeFishScript::Array> ArrayPointer;
 
    inline std::string escapeString(const String& string);
-
-   #define undefined BeeFishScript::Variable::Undefined()
 
    class Object : public Map {
    public:
@@ -151,7 +151,7 @@ namespace BeeFishScript {
          Value(BeeFishJSON::Type type, const Value& source) {
             switch (type) {
             case BeeFishJSON::Type::UNDEFINED:
-            case BeeFishJSON::Type::_NULL:
+            case BeeFishJSON::Type::null:
                break;
             case BeeFishJSON::Type::BOOLEAN:
                _boolean = source._boolean;
@@ -197,7 +197,7 @@ namespace BeeFishScript {
       }
 
       Variable(const Null& _nullptr) {
-         _type = BeeFishJSON::Type::_NULL;
+         _type = BeeFishJSON::Type::null;
       }
 
       Variable(const Boolean& boolean) {
@@ -256,13 +256,13 @@ namespace BeeFishScript {
          Variable(ObjectPointer(new Object(list)))
       {
       }
-
+/*
       istream& operator >> (istream& in) {
          Variable variable;
          auto object = BeeFishJSON::Object();
          return in >> object;
       }
-
+*/
       static Variable& Undefined() {
          static Variable _undefined;
          return _undefined;
@@ -271,7 +271,7 @@ namespace BeeFishScript {
       virtual ~Variable() {
          switch (_type) {
          case BeeFishJSON::Type::UNDEFINED:
-         case BeeFishJSON::Type::_NULL:
+         case BeeFishJSON::Type::null:
          case BeeFishJSON::Type::BOOLEAN:
          case BeeFishJSON::Type::NUMBER:
             break;
@@ -339,7 +339,7 @@ namespace BeeFishScript {
 
       virtual bool operator == (const Null compare) const {
 
-         if (_type == BeeFishJSON::Type::_NULL)
+         if (_type == BeeFishJSON::Type::null)
             return true;
 
          return false;
@@ -348,7 +348,7 @@ namespace BeeFishScript {
 
       virtual bool operator != (const Null compare) const {
 
-         if (_type != BeeFishJSON::Type::_NULL)
+         if (_type != BeeFishJSON::Type::null)
             return true;
 
          return false;
@@ -383,7 +383,7 @@ namespace BeeFishScript {
          case BeeFishJSON::Type::UNDEFINED:
             out << "undefined";
             break;
-         case BeeFishJSON::Type::_NULL:
+         case BeeFishJSON::Type::null:
             out << "null";
             break;
          case BeeFishJSON::Type::BOOLEAN:
@@ -446,26 +446,9 @@ namespace BeeFishScript {
       }
 
       String type() const {
-
-         switch (_type) {
-         case BeeFishJSON::Type::UNDEFINED:
-            return "undefined";
-         case BeeFishJSON::Type::_NULL:
-            return "null";
-         case BeeFishJSON::Type::BOOLEAN:
-            return "Boolean";
-         case BeeFishJSON::Type::NUMBER:
-            return "Number";
-         case BeeFishJSON::Type::STRING:
-            return "String";
-         case BeeFishJSON::Type::ARRAY:
-            return "Array";
-         case BeeFishJSON::Type::OBJECT:
-            return "Object";
-         default:
-            throw std::logic_error("Invalid variable type");
-         }
-
+         stringstream stream;
+         stream << _type;
+         return stream.str();
       }
 
       virtual size_t contentLength() const {
@@ -650,6 +633,8 @@ namespace BeeFishScript {
       return out.str();
 
    }
+
+
 
 /*
    inline Variable Object::operator[] (const BString& key) const {

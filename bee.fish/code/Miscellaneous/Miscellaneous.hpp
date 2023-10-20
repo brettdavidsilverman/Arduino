@@ -4,7 +4,6 @@
 #include <string>
 #include <unistd.h>
 #include <memory>
-#include "Log.hpp"
 #include "optional.h"
 #include "../Config.hpp"
 

@@ -21,6 +21,21 @@
 #include "sdkconfig.h"
 #include "camera_index.h"
 
+// BEGIN MOD BDS
+//
+#include <Adafruit_MCP23008.h>
+extern Adafruit_MCP23008 mcp;
+
+#include <Adafruit_BME280.h>
+extern Adafruit_BME280 bme1; // I2C
+extern Adafruit_BME280 bme2; // I2C
+
+// END MOD
+
+
+
+#include "../../../bee.fish/code/JSON/Variable.hpp"
+
 #if defined(ARDUINO_ARCH_ESP32) && defined(CONFIG_ARDUHAL_ESP_LOG)
 #include "esp32-hal-log.h"
 #define TAG ""
@@ -466,6 +481,14 @@ static esp_err_t stream_handler(httpd_req_t *req) {
     isStreaming = true;
 #endif
 
+
+// BEGIN MOD BDS
+//
+//  Turn red light on
+    mcp.begin();
+    mcp.pinMode(0, OUTPUT);
+    mcp.digitalWrite(0, HIGH);
+
     while (true) {
 #if CONFIG_ESP_FACE_DETECT_ENABLED
         detected = false;
@@ -613,6 +636,12 @@ static esp_err_t stream_handler(httpd_req_t *req) {
 #endif
         );
     }
+
+// BEGIN MOD BDS
+//
+//  Turn red light off
+    mcp.digitalWrite(0, LOW);
+// END MOD
 
 #ifdef CONFIG_LED_ILLUMINATOR_ENABLED
     isStreaming = false;
@@ -1031,6 +1060,42 @@ static esp_err_t index_handler(httpd_req_t *req) {
     }
 }
 
+BeeFishScript::Object getWeather(Adafruit_BME280& bme) {
+
+    BeeFishScript::Object weather{
+        {"Temperature °C",  bme.readTemperature()},
+        {"Pressure hPa",    bme.readPressure() / 100.0},
+        {"Humiditiy %",     bme.readHumidity()}
+    };
+
+    return weather;
+}
+
+
+static esp_err_t weather_handler(httpd_req_t *req) {
+
+    httpd_resp_set_type(req, "application/json; charset=utf-8");
+
+    httpd_resp_set_hdr(req, "Access-Control-Allow-Origin", "*");
+
+    BeeFishScript::Object object;
+
+    if (bme1.begin(0x76)) {
+        object["Indoor Weather"] = getWeather(bme1);
+    }
+
+    if (bme2.begin(0x77)) {
+        object["Outdoor Weather"] = getWeather(bme2);
+    }
+
+    std::stringstream stream;
+    stream << object;
+
+    std::string json = stream.str();
+
+    return httpd_resp_send(req, json.c_str(), json.length());
+}
+
 void startCameraServer() {
     httpd_config_t config   = HTTPD_DEFAULT_CONFIG();
     config.max_uri_handlers = 16;
@@ -1090,7 +1155,16 @@ void startCameraServer() {
                            .handler  = win_handler,
                            .user_ctx = NULL};
 
-    ra_filter_init(&ra_filter, 20);
+// BEGIN MOD BDS
+//
+    httpd_uri_t weather_uri = {.uri      = "/weather",
+                           .method   = HTTP_GET,
+                           .handler  = weather_handler,
+                           .user_ctx = NULL};
+
+// END MNOD
+
+   ra_filter_init(&ra_filter, 20);
 
 #if CONFIG_ESP_FACE_DETECT_ENABLED
 
@@ -1126,6 +1200,10 @@ void startCameraServer() {
         httpd_register_uri_handler(camera_httpd, &greg_uri);
         httpd_register_uri_handler(camera_httpd, &pll_uri);
         httpd_register_uri_handler(camera_httpd, &win_uri);
+// BEGIN MOD BDS        
+//
+        httpd_register_uri_handler(camera_httpd, &weather_uri);
+// END MOD BDS        
     }
 
     config.server_port += 1;

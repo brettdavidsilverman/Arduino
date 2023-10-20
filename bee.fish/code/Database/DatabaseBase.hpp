@@ -9,6 +9,9 @@
 #include <map>
 #include <mutex>
 
+#define LOG
+#include "../Miscellaneous/Log.hpp"
+
 #include "Version.hpp"
 #include "File.hpp"
 #include "Index.hpp"
@@ -175,7 +178,8 @@ namespace BeeFishDatabase {
       }
          
       
-   public:
+   public:
+
       Size pageSize() const {
          return _pageSize;
       }

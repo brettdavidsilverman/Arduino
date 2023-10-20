@@ -6,12 +6,12 @@
 #include <Adafruit_MCP23008.h>
 #include <Adafruit_GFX.h>
 #include <Adafruit_SSD1306.h>
+
 #include "battery.h"
 #include "esp_camera.h"
 #include <WiFi.h>
 #include "soc/soc.h"
 #include "soc/rtc_cntl_reg.h"
-
 #include "camera_pins.h"
 
 #define SEALEVELPRESSURE_HPA (1024)
@@ -143,10 +143,9 @@ bool initializeMultiplexer() {
     mcp.pinMode(0, OUTPUT);
     mcp.pinMode(1, OUTPUT);
 
-    mcp.digitalWrite(0, HIGH);
+    mcp.digitalWrite(0, LOW);
     mcp.digitalWrite(1, LOW);
   
-    Serial.println("Multiplexer initialized");
     return true;
 }
 
@@ -226,8 +225,13 @@ bool initializeWiFi() {
 
     IPAddress IP = WiFi.softAPIP();
 
-    Serial.println("AP IP address:");
-    Serial.print("http://");
+    Serial.println("Weather:");
+    Serial.print("\thttp://");
+    Serial.print(IP);
+    Serial.println("/weather");
+
+    Serial.println("Video stream:");
+    Serial.print("\thttp://");
     Serial.print(IP);
     Serial.println(":81/stream");
 
@@ -247,7 +251,6 @@ void loop() {
     
 //    bme1.begin(0x76);
 //    bme2.begin(0x77);
-    initializeMultiplexer();
 
     // put your main code here, to run repeatedly:
     delay(100);

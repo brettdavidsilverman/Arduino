@@ -6,7 +6,7 @@
    #define WEB_SERVER_HOST "bee.fish"
 #else
    #define WEB_SERVER_PORT 8080
-   #define WEB_SERVER_HOST "dev.bee.fish"
+   #define WEB_SERVER_HOST "localhost"
 #endif
 
 #include "../Config.hpp"

@@ -3,6 +3,7 @@
 
 #include "../Parser/Parser.hpp"
 #include "../PowerEncoding/PowerEncoding.hpp"
+#include "Type.hpp"
 #include "Version.hpp"
 #include "Object.hpp"
 #include "Array.hpp"
@@ -13,65 +14,7 @@
 namespace BeeFishJSON {
 
    using namespace BeeFishParser;
-
-   enum class Type {
-      UNDEFINED,
-      _NULL,
-      BOOLEAN,
-      NUMBER,
-      STRING,
-      KEY,
-      ARRAY,
-      OBJECT,
-      ROOT
-   };
-
-   ostream& operator << (ostream& out, const Type& type)
-   {
-      switch (type)
-      {
-         case Type::UNDEFINED:
-            out << "undefined";
-            break;
-         case Type::_NULL:
-            out << "null";
-            break;
-         case Type::BOOLEAN:
-            out << "bool";
-            break;
-         case Type::NUMBER:
-            out << "number";
-            break;
-         case Type::STRING:
-            out << "string";
-            break;
-         case Type::ARRAY:
-            out << "array";
-            break;
-         case Type::OBJECT:
-            out << "object";
-            break;
-         default:
-            out << "UNKNOWN";
-      }
-
-      return out;
-   }
-
-   PowerEncoding& operator << (PowerEncoding& out, const Type& type)
-   {
-      out << (int)type;
-      return out;
-   }
-
-   PowerEncoding& operator >> (PowerEncoding& in, Type& value)
-   {
-      int type;
-      in >> type;
-      value = (Type)type;
-      return in;
-   }
-
+  
    class JSON : public Parser
    {
    protected:
@@ -116,7 +59,7 @@ namespace BeeFishJSON {
       And createParser(Parser* params) {
       
 
-         static const auto undefined =
+         static const auto undef =
             Word("undefined");
 
          static const auto _null =
@@ -134,7 +77,7 @@ namespace BeeFishJSON {
          return
             blankSpaces and
             (
-               undefined or
+               undef or
                _null or
                boolean or
                number or
@@ -150,7 +93,7 @@ namespace BeeFishJSON {
       return JSON(params).copy();
    }
 
-}
 
+}
 
 #endif
